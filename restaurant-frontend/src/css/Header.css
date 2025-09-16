@@ -1,0 +1,82 @@
+/* Container chính của Header */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* nav-links bên trái, actions bên phải */
+  background: #ffffff;
+  padding: 10px 30px;
+  border-bottom: 1px solid #eaeaea;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Logo */
+.logo {
+  margin-right: 15px; /* tạo khoảng cách nhẹ với nav-links */
+}
+
+.logo a {
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+  text-decoration: none;
+}
+
+/* Navigation Links */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* khoảng cách giữa các link */
+}
+
+.nav-links a {
+  color: #333;
+  text-decoration: none;
+  font-size: 16px;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: #1890ff;
+}
+
+/* Dropdown link */
+.dropdown-link {
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.dropdown-link .anticon {
+  font-size: 12px; /* thu nhỏ icon DownOutlined */
+  margin-left: 4px; /* tạo khoảng cách nhẹ với chữ */
+  vertical-align: middle;
+}
+
+/* Search + Login */
+.right-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Chỉ áp dụng cho thanh cuộn của notification dropdown */
+.notification-list::-webkit-scrollbar {
+  width: 8px; /* Độ rộng scrollbar */
+}
+
+.notification-list::-webkit-scrollbar-track {
+  background: #f5f5f5; /* nền track (xám nhạt) */
+  border-radius: 4px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background-color: #bfbfbf; /* màu xám nhạt */
+  border-radius: 4px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background-color: #999; /* khi hover */
+}

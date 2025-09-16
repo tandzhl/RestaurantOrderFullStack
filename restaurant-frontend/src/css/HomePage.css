@@ -1,0 +1,48 @@
+/* Grid card món ăn */
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* Ảnh trong card */
+.food-image {
+  height: 200px;
+  object-fit: cover;
+}
+
+/* Giá */
+.food-price {
+  font-weight: bold;
+  color: #d4380d;
+  margin: 5px 0;
+}
+
+/* Căn giữa pagination */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.home-container {
+  min-height: 100vh;     /* thay height bằng min-height */
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+/* danh sách card sẽ scroll */
+.food-list {
+  flex: 1;                /* chiếm hết phần trống */
+  overflow-y: auto;       /* scroll khi vượt */
+  padding-right: 8px;     /* chừa chỗ scrollbar */
+}
+
+/* pagination cố định phía dưới */
+.pagination-container {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}

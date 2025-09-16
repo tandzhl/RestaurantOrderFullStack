@@ -1,0 +1,59 @@
+html, body {    /* chiếm full */
+  min-height: 100vh; /* đảm bảo ít nhất cao bằng màn hình */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* tránh kéo ngang */
+}
+
+/* Container căn giữa */
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 100vh;     /* thay height bằng min-height */
+}
+
+/* Card Register */
+.register-card {
+  width: 65%;                 /* 🔥 chiếm 50% chiều rộng màn hình */
+  max-width: 700px;           /* (tùy chọn) giới hạn không quá to */
+  min-width: 400px;           /* (tùy chọn) không quá nhỏ */
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  background: #fff;
+  border-radius: 16px !important;
+}
+
+/* Tiêu đề */
+.register-title {
+  margin-bottom: 16px !important;
+  font-weight: bold;
+  color: #1e3a8a;
+}
+
+/* Giảm khoảng cách Form Item */
+.ant-form-item {
+  margin-bottom: 12px !important; /* 🔥 từ 24px xuống 12px */
+}
+
+/* Input */
+.ant-input, .ant-input-password {
+  border-radius: 6px;
+}
+
+/* Nút đăng ký */
+.register-btn {
+  width: 100%;
+  height: 45px;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 8px;
+  background-color: #2563eb;
+  border: none;
+}
+
+.register-btn:hover {
+  background-color: #1d4ed8;
+}
