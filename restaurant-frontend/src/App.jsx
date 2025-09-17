@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -18,7 +18,9 @@ import OrderPage from "./pages/OrderPage";
 import RestaurantOrdersPage from "./pages/RestaurantOrdersPage";
 import PaymentResultPage from "./pages/PaymentResultPage";
 import RestaurantEditPage from "./pages/RegisterEditPage";
-
+import RestaurantRevenueReport from "./pages/RestaurantRevenueReport";
+import RestaurantMessages from "./pages/RestaurantMessages";
+import ProfilePage from "./pages/ProfilePage";
 function App() {
   const [slugMap, setSlugMap] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +45,10 @@ function App() {
         <Route path="/owner/restaurant/:id/food" element={<FoodManagerPage />} />
         <Route path="/owner/restaurant/:id/orders" element={<RestaurantOrdersPage />} />
         <Route path="/owner/restaurant/:id/infor" element={<RestaurantEditPage />} />
+        <Route path="/owner/restaurant/:id/revenue" element={<RestaurantRevenueReport />} />
+        <Route path="/owner/restaurant/:id/messages" element={<RestaurantMessages />} />
         <Route path="/orders" element={<OrderPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/payment-result" element={<PaymentResultPage />} />
       </Routes>
     </BrowserRouter>

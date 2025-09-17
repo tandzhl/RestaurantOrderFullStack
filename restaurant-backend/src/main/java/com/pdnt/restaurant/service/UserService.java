@@ -3,6 +3,7 @@ package com.pdnt.restaurant.service;
 import com.cloudinary.api.exceptions.ApiException;
 import com.pdnt.restaurant.dto.request.CreateUserRequest;
 import com.pdnt.restaurant.dto.request.UpdateUserRequest;
+import com.pdnt.restaurant.dto.response.UserResponse;
 import com.pdnt.restaurant.entity.User;
 import com.pdnt.restaurant.mapper.UserMapper;
 import com.pdnt.restaurant.exceptions.ErrorCode;
@@ -31,22 +32,34 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public User getUserById(Long id) {
-        return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+    public UserResponse getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return userMapper.toUserResponse(user);
     }
 
-    public User updateUsers(Long id, UpdateUserRequest request) {
-        User user = getUserById(id);
+    public UserResponse updateUsers(Long id, UpdateUserRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         userMapper.updateUser(user, request);
 
-        if (request.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
-        }
-
-        return userRepository.save(user);
+        return userMapper.toUserResponse(userRepository.save(user));
     }
 
+    public UserResponse changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new WebException(ErrorCode.PASSWORD_INCORRECT));
+
+        // ✅ Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("Mật khẩu cũ không đúng");
+        }
+
+        // ✅ Cập nhật mật khẩu mới (mã hóa)
+        user.setPassword(passwordEncoder.encode(newPassword));
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);

@@ -70,7 +70,7 @@ function OrderPage() {
         }
 
         navigate(
-          `/payment-result?status=FAILED&orderId=${order.id}&amount=${order.totalAmount}`
+          `/payment-result?status=FAILED&orderId=${order.id}&amount=${order.totalAmount * 100}`
         );
       }
     }

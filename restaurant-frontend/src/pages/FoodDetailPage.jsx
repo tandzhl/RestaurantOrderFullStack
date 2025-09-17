@@ -260,15 +260,22 @@ const FoodDetailPage = () => {
                         style={{ marginTop: 10 }}
                         />
                         <Upload
-                        beforeUpload={(file) => {
+                          beforeUpload={(file) => {
                             setEditingReview((prev) => ({ ...prev, newImageFile: file }));
                             return false;
-                        }}
-                        maxCount={1}
-                        style={{ marginTop: 10 }}
+                          }}
+                          maxCount={1}
+                          style={{ marginTop: 10 }}
                         >
-                        <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+                          <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
                         </Upload>
+                        {editingReview?.newImageFile && (
+                          <img
+                            src={URL.createObjectURL(editingReview.newImageFile)}
+                            alt="preview"
+                            style={{ maxWidth: 200, marginTop: 8, borderRadius: 6 }}
+                          />
+                        )}
                         <div style={{ marginTop: 10 }}>
                         <Button type="primary" onClick={handleEditReview}>
                             Lưu thay đổi
@@ -314,15 +321,25 @@ const FoodDetailPage = () => {
             style={{ marginTop: 10 }}
         />
         <Upload
-            beforeUpload={(file) => {
+          beforeUpload={(file) => {
             setImageFile(file);
             return false;
-            }}
-            maxCount={1}
-            style={{ marginTop: 10 }}
+          }}
+          maxCount={1}
+          style={{ marginTop: 10 }}
         >
-            <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+          <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
         </Upload>
+
+        {/* Hiển thị ảnh mới chọn */}
+        {imageFile && (
+          <img
+            src={URL.createObjectURL(imageFile)}
+            alt="preview"
+            style={{ maxWidth: 200, marginTop: 8, borderRadius: 6 }}
+          />
+        )}
+
         <Button
             type="primary"
             onClick={handleAddReview}

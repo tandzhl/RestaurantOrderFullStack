@@ -1,13 +1,13 @@
 package com.pdnt.restaurant.controller;
 
-import com.pdnt.restaurant.dto.request.CreateUserRequest;
+import com.pdnt.restaurant.dto.request.ChangePasswordRequest;
 import com.pdnt.restaurant.dto.request.UpdateUserRequest;
-import com.pdnt.restaurant.dto.response.ApiResponse;
 import com.pdnt.restaurant.dto.response.UserResponse;
 import com.pdnt.restaurant.entity.User;
 import com.pdnt.restaurant.mapper.UserMapper;
 import com.pdnt.restaurant.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,25 +29,34 @@ public class UserController {
 
     @GetMapping("/me")
     public UserResponse getCurrentUser(Authentication authentication) {
-        User user = (User) authentication.getPrincipal(); // Lấy user từ SecurityContext
+        User user = (User) authentication.getPrincipal(); // lấy user từ SecurityContext
         return userMapper.toUserResponse(user);
     }
 
+    // ✅ chỉ ADMIN và RESTAURANT_OWNER mới gọi được
+    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_OWNER')")
     @GetMapping("/{user_id}")
-    User getUserById(@PathVariable("user_id") Long userId) {
+    public UserResponse getUserById(@PathVariable("user_id") Long userId) {
         return userService.getUserById(userId);
     }
 
     @PutMapping("/{user_id}")
-    User updateUser(@PathVariable("user_id") Long userId, @RequestBody UpdateUserRequest request) {
+    public UserResponse updateUser(@PathVariable("user_id") Long userId,
+                           @RequestBody UpdateUserRequest request) {
         return userService.updateUsers(userId, request);
     }
 
-    @DeleteMapping("/{user_id}")
-    String deleteUser(@PathVariable("user_id") Long userId) {
-        userService.deleteUser(userId);
-
-        return "User has been deleted";
+    @PutMapping("/{user_id}/change-password")
+    public UserResponse changePassword(@PathVariable("user_id") Long userId,
+                                 @RequestBody ChangePasswordRequest request) {
+        return userService.changePassword(userId, request.getOldPass(), request.getNewPass());
     }
 
+    // ✅ chỉ ADMIN mới được xóa user
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{user_id}")
+    public String deleteUser(@PathVariable("user_id") Long userId) {
+        userService.deleteUser(userId);
+        return "User has been deleted";
+    }
 }

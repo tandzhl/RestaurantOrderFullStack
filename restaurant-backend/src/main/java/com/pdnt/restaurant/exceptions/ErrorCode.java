@@ -7,6 +7,8 @@ public enum ErrorCode {
     REVIEW_DELETE_FORBIDDEN(1112, "You cannot delete someone else's review"),
     UNAUTHORIZED(4001, "Người dùng chưa đăng nhập"),
     ORDER_REJECTED(5001, "Trong OrderGroup có đơn bị hủy, không thể thanh toán!"),
+    PASSWORD_INCORRECT(5002, "Mật khẩu không đúng!!!"),
+
     FORBIDDEN(4003, "Bạn không có quyền thực hiện hành động này!"); // giống HTTP 403
 
     ErrorCode(int code, String message) {

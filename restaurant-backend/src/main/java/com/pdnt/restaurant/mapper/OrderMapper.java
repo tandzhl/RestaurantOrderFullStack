@@ -9,17 +9,11 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
-
-    // Map OrderItemRequest -> OrderItem
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "order", ignore = true)
-    @Mapping(target = "foodItem", ignore = true)
-    @Mapping(target = "price", ignore = true)
-    OrderItem toOrderItem(OrderItemRequest dto);
-
-    // Map Order -> OrderResponse (enum -> String)
+    // Map Order -> OrderResponse
     @Mapping(target = "payment", expression = "java(order.getPayment() != null ? order.getPayment().name() : null)")
-    @Mapping(target = "items", ignore = true) // 👈 bỏ qua items
+    @Mapping(target = "items", ignore = true) // items sẽ set thủ công
+    @Mapping(target = "customerId", source = "customer.id") // 👈 thêm dòng này
+    @Mapping(target = "customerName", expression = "java(order.getCustomer() != null ? order.getCustomer().getFirstName() + \" \" + order.getCustomer().getLastName() : null)")
     OrderResponse toOrderResponse(Order order);
 
     // Map OrderItem -> OrderItemResponse

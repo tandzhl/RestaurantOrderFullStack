@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,7 +19,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-
+@EnableMethodSecurity(prePostEnabled = true)
 @Configuration
 @AllArgsConstructor
 public class SecurityConfig {
@@ -49,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/menus/**").hasRole("RESTAURANT_OWNER")
                         .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_OWNER")
+                        .requestMatchers("/reports/**").hasRole("RESTAURANT_OWNER")
                         .requestMatchers(HttpMethod.GET, "/food-items/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/payment/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/food-reviews/**").permitAll()

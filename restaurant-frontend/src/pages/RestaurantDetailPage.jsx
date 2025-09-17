@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
-import { Card, Row, Col, Spin, message, Tag, Rate, List, Button, Input, Modal, } from "antd";
 import { useParams } from "react-router-dom";
-import { EnvironmentOutlined, ClockCircleOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { 
+  Card, Row, Col, Spin, message, Tag, Rate, List, Button, Input, Modal, Upload 
+} from "antd";
+import { 
+  EnvironmentOutlined, ClockCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, MessageOutlined
+} from "@ant-design/icons";
 import api from "../api/axios";
 import AddReviewForm from "../pages/AddReviewForm"
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import ChatBox from "../pages/ChatBox";
 dayjs.extend(customParseFormat);
 
 const { TextArea } = Input;
@@ -22,6 +27,7 @@ const RestaurantDetailPage = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showChatBox, setShowChatBox] = useState(false);
 
   // Lấy thông tin user từ token
   useEffect(() => {
@@ -99,8 +105,6 @@ const RestaurantDetailPage = () => {
 
     fetchFollowStatus();
   }, [id, currentUser]);
-
-
 
   const handleEditReview = async (reviewId) => {
     if (!editingReview) return;
@@ -203,7 +207,15 @@ const RestaurantDetailPage = () => {
             <p>
               <EnvironmentOutlined /> {restaurant.address}
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center", // 👈 căn giữa ngang
+                gap: 8,
+                margin: "12px 0", // thêm khoảng cách cho đẹp
+              }}
+            >
               <Rate
                 disabled
                 value={restaurant.averageRating || 0}
@@ -266,7 +278,23 @@ const RestaurantDetailPage = () => {
               >
                 {isFollowing ? "Hủy theo dõi" : "Theo dõi"}
               </Button>
+
+              {/* 👉 Nút chat */}
+              <Button
+                type="dashed"
+                icon={<MessageOutlined />}
+                onClick={() => setShowChatBox(!showChatBox)}
+                style={{ marginLeft: 12 }}
+              >
+                Liên hệ với cửa hàng
+              </Button>
             </p>
+            {/* 👉 Chat box */}
+            {showChatBox && (
+              <div style={{ marginTop: 20 }}>
+                <ChatBox restaurant={restaurant} />
+              </div>
+            )}
           </Col>
 
           
@@ -429,7 +457,7 @@ const RestaurantDetailPage = () => {
             />
 
             <Modal
-              open={!!editingReview} // ⚠ đổi từ visible -> open (theo warning của antd v5)
+              open={!!editingReview}
               title="Chỉnh sửa bình luận"
               onCancel={() => setEditingReview(null)}
               onOk={() => handleEditReview(editingReview.id)}
@@ -453,8 +481,38 @@ const RestaurantDetailPage = () => {
                   setEditingReview({ ...editingReview, comment: e.target.value })
                 }
               />
-            </Modal>
 
+              {/* Upload ảnh */}
+              <Upload
+                beforeUpload={(file) => {
+                  setEditingReview({ ...editingReview, newImageFile: file });
+                  return false;
+                }}
+                onRemove={() => setEditingReview({ ...editingReview, newImageFile: null })}
+                maxCount={1}
+                style={{ marginTop: 10 }}
+              >
+                <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+              </Upload>
+
+              {/* ✅ Preview ảnh mới chọn */}
+              {editingReview?.newImageFile && (
+                <img
+                  src={URL.createObjectURL(editingReview.newImageFile)}
+                  alt="preview"
+                  style={{ maxWidth: 200, marginTop: 8, borderRadius: 6 }}
+                />
+              )}
+
+              {/* ✅ Preview ảnh cũ nếu chưa chọn ảnh mới */}
+              {!editingReview?.newImageFile && editingReview?.imgUrl && (
+                <img
+                  src={editingReview.imgUrl}
+                  alt="old-review"
+                  style={{ maxWidth: 200, marginTop: 8, borderRadius: 6 }}
+                />
+              )}
+            </Modal>
 
             <AddReviewForm
               restaurantId={id}

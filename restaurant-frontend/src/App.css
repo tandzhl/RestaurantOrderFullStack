@@ -44,3 +44,21 @@
 .mdb-input input {
   color: #000 !important;
 }
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px; /* mỏng hơn */
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #f5f5f5; /* nền nhạt */
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #c1c1c1; /* màu nhạt xám */
+  border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; /* khi hover thì đậm hơn tí */
+}

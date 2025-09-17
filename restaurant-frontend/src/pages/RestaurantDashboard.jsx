@@ -32,6 +32,10 @@ function RestaurantDashboard() {
       <Menu.Item key="orders" onClick={() => navigate(`/owner/restaurant/${id}/orders`)}>
         Đơn hàng
       </Menu.Item>
+      {/* 👉 Thêm menu quản lý tin nhắn */}
+      <Menu.Item key="messages" onClick={() => navigate(`/owner/restaurant/${id}/messages`)}>
+        Quản lý tin nhắn
+      </Menu.Item>
     </Menu>
   );
 
@@ -50,7 +54,13 @@ function RestaurantDashboard() {
             <img
               src={restaurant.imageUrl}
               alt={restaurant.name}
-              style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8, marginRight: 16 }}
+              style={{
+                width: 120,
+                height: 120,
+                objectFit: "cover",
+                borderRadius: 8,
+                marginRight: 16,
+              }}
             />
 
             {/* Giữa: Thông tin */}
@@ -60,7 +70,9 @@ function RestaurantDashboard() {
               <p style={{ margin: 0 }}>
                 Giờ mở cửa: {restaurant.openingTime} - {restaurant.closingTime}
               </p>
-              <p style={{ margin: 0 }}>⭐ {restaurant.averageRating.toFixed(1)} ({restaurant.totalReviews} đánh giá)</p>
+              <p style={{ margin: 0 }}>
+                ⭐ {restaurant.averageRating.toFixed(1)} ({restaurant.totalReviews} đánh giá)
+              </p>
             </div>
 
             {/* Bên phải: nút ba chấm */}

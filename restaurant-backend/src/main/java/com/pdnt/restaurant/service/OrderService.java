@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +33,6 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(OrderCreateRequest request) {
-        // 1. fetch user + restaurant
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 
@@ -43,28 +41,26 @@ public class OrderService {
         Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
                 .orElseThrow(() -> new NoSuchElementException("Restaurant not found: " + request.getRestaurantId()));
 
-        // 2. create order entity (save early to get id for txnRef if needed)
         Order order = Order.builder()
                 .customer(customer)
                 .restaurant(restaurant)
                 .status("PENDING")
-                .payment(Payment.CASH) // default
+                .payment(Payment.CASH)
                 .build();
 
-        // allow request to set payment if provided and valid
         if (request.getPayment() != null) {
             try {
                 order.setPayment(Payment.valueOf(request.getPayment().toUpperCase()));
             } catch (IllegalArgumentException ex) {
-                // invalid payment string -> keep default or throw; here we keep default
+                // giữ mặc định CASH
             }
         }
 
+        // save order để có id
         order = orderRepository.save(order);
 
-        // 3. create order items & compute total
         double total = 0.0;
-        List<OrderItem> savedItems = new ArrayList<>();
+        List<OrderItem> items = new ArrayList<>();
 
         for (OrderItemRequest itReq : request.getItems()) {
             FoodItem food = foodItemRepository.findById(itReq.getFoodItemId())
@@ -81,24 +77,17 @@ public class OrderService {
                     .quantity(qty)
                     .price(price)
                     .build();
-            OrderItem saved = orderItemRepository.save(oi);
-            savedItems.add(saved);
+            items.add(orderItemRepository.save(oi));
             total += price;
         }
 
-        // 4. update order total & save
         order.setTotalAmount(total);
+        order.setOrderItems(items); // 👈 gán vào entity
         order = orderRepository.save(order);
 
-        // 5. map to response
-        OrderResponse resp = orderMapper.toOrderResponse(order);
-        List<OrderItemResponse> itemResponses = savedItems.stream()
-                .map(orderMapper::toOrderItemResponse)
-                .collect(Collectors.toList());
-        resp.setItems(itemResponses);
-
-        return resp;
+        return orderMapper.toOrderResponse(order);
     }
+
 
     public List<OrderResponse> getOrdersByUser(Long userId) {
         List<Order> orders = orderRepository.findByCustomerId(userId);
@@ -146,5 +135,6 @@ public class OrderService {
         order.setStatus("REJECTED");
         orderRepository.save(order);
     }
+
 
 }

@@ -34,7 +34,7 @@ const CategoryPage = ({ slugMap, categories }) => {
     // Thêm vào giỏ hàng
     const addToCart = (item) => {
         
-        console.log("👉 Food item khi add vào giỏ:", item); 
+            console.log("👉 Food item khi add vào giỏ:", item); 
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
 
         const existing = cart.find((c) => c.id === item.id);

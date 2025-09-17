@@ -12,8 +12,6 @@ const AddReviewForm = ({ restaurantId, currentUser, onReviewAdded }) => {
   const [loading, setLoading] = useState(false);
 
   const handleAddReview = async () => {
-    console.log("currentUser:", currentUser);
-
     if (!currentUser) return message.warning("Bạn cần đăng nhập để bình luận!");
     if (!comment.trim()) return message.warning("Nội dung bình luận không được để trống");
 
@@ -30,7 +28,7 @@ const AddReviewForm = ({ restaurantId, currentUser, onReviewAdded }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      onReviewAdded(res.data); // gọi callback để update list reviews
+      onReviewAdded(res.data);
       setComment("");
       setImage(null);
       message.success("Thêm bình luận thành công!");
@@ -52,10 +50,11 @@ const AddReviewForm = ({ restaurantId, currentUser, onReviewAdded }) => {
         onChange={(e) => setComment(e.target.value)}
         style={{ marginTop: 8 }}
       />
+
       <Upload
         beforeUpload={(file) => {
           setImage(file);
-          return false; // không upload ngay
+          return false;
         }}
         onRemove={() => setImage(null)}
         maxCount={1}
@@ -63,6 +62,16 @@ const AddReviewForm = ({ restaurantId, currentUser, onReviewAdded }) => {
       >
         <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
       </Upload>
+
+      {/* ✅ Preview ảnh khi chọn */}
+      {image && (
+        <img
+          src={URL.createObjectURL(image)}
+          alt="preview"
+          style={{ maxWidth: 200, marginTop: 8, borderRadius: 6 }}
+        />
+      )}
+
       <Button
         type="primary"
         loading={loading}

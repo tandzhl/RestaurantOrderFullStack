@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Table, Button, message } from "antd";
+import { Table, Button, message, Popconfirm } from "antd";
 import { useParams } from "react-router-dom";
 import api from "../api/axios";
 
@@ -39,7 +39,7 @@ export default function RestaurantOrdersPage() {
 
   useEffect(() => {
     fetchOrders(1, pagination.pageSize); // load khi vào page
-  }, [id, fetchOrders]); // chỉ chạy khi id thay đổi
+  }, [id, fetchOrders]);
 
   const handleCancel = (orderId) => {
     api
@@ -57,6 +57,12 @@ export default function RestaurantOrdersPage() {
 
   const columns = [
     { title: "ID", dataIndex: "id", key: "id" },
+    {
+      title: "Khách hàng",
+      dataIndex: "customerName",
+      key: "customerName",
+      render: (value) => value || "-", // nếu null thì hiện "-"
+    },
     {
       title: "Tổng tiền",
       dataIndex: "totalAmount",
@@ -76,11 +82,17 @@ export default function RestaurantOrdersPage() {
       key: "action",
       render: (_, record) =>
         record.status === "PENDING" ? (
-          <Button danger size="small" onClick={() => handleCancel(record.id)}>
-            Hủy đơn
-          </Button>
+          <Popconfirm
+            title="Xác nhận hủy đơn?"
+            description="Bạn có chắc chắn muốn hủy đơn này không?"
+            okText="Có"
+            cancelText="Không"
+            onConfirm={() => handleCancel(record.id)}
+          >
+            <Button danger size="small">Hủy đơn</Button>
+          </Popconfirm>
         ) : null,
-    },
+    },  
   ];
 
   return (
@@ -96,7 +108,27 @@ export default function RestaurantOrdersPage() {
         pagination={pagination}
         onChange={handleTableChange}
         bordered
+        rowClassName={(record) => {
+          if (record.status === "PENDING") return "row-pending";
+          if (record.status === "REJECTED" || record.status === "CANCELLED")
+            return "row-rejected";
+          if (record.status === "SUCCESS") return "row-success";
+          return "";
+        }}
       />
+      <style>
+        {`
+          .row-pending {
+            background-color: #fffbe6 !important; /* vàng nhạt */
+          }
+          .row-rejected {
+            background-color: #fff1f0 !important; /* đỏ nhạt */
+          }
+          .row-success {
+            background-color: #f6ffed !important; /* xanh nhạt */
+          }
+        `}
+      </style>  
     </div>
   );
 }

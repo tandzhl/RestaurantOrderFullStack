@@ -24,12 +24,22 @@ function Header({ onSlugMapReady, onSearch }) {
 
   // --- Fetch user info + notifications ---
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
-    if (token) {
-      fetchUserInfo();
-      fetchNotifications();
-    }
+    const updateLoginState = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+      if (token) {
+        fetchUserInfo();
+        fetchNotifications();
+      } else {
+        setUserRole(null);
+        setNotifications([]);
+      }
+    };
+
+    updateLoginState();
+
+    window.addEventListener("storage", updateLoginState);
+    return () => window.removeEventListener("storage", updateLoginState);
   }, []);
 
   const fetchUserInfo = async () => {
