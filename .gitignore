@@ -1,0 +1,26 @@
+# ---- Common ----
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+*.swp
+.env
+.env.local
+
+# ---- Node / React ----
+restaurant-frontend/node_modules/
+restaurant-frontend/build/
+restaurant-frontend/.env
+
+# ---- Java / Spring Boot ----
+restaurant-backend/target/
+restaurant-backend/.idea/
+restaurant-backend/.classpath
+restaurant-backend/.project
+restaurant-backend/.settings/
+restaurant-backend/*.iml
+
+# ---- OS / Editor ----
+.vscode/
+.idea/
