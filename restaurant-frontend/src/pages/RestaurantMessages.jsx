@@ -1,8 +1,19 @@
+// src/pages/RestaurantMessages.jsx
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { List, Input, Button, Typography, Card } from "antd";
+import { List, Input, Button, Typography, Card, Spin } from "antd";
 import { SendOutlined } from "@ant-design/icons";
 import api from "../api/axios";
+import { db } from "../firebase";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+} from "firebase/firestore";
 
 const { Title } = Typography;
 
@@ -12,16 +23,17 @@ function RestaurantMessages() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [ownerId, setOwnerId] = useState(null);
+  const [owner, setOwner] = useState(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const messagesEndRef = useRef(null);
 
-  // 📌 Lấy thông tin user hiện tại (nhà hàng) từ API
+  // 📌 Lấy thông tin user hiện tại (chủ nhà hàng)
   useEffect(() => {
     const fetchMe = async () => {
       try {
         const res = await api.get("/users/me");
-        setOwnerId(res.data.id); // lưu id của nhà hàng
+        setOwner(res.data);
       } catch (err) {
         console.error("Fetch user error:", err);
       }
@@ -29,7 +41,7 @@ function RestaurantMessages() {
     fetchMe();
   }, []);
 
-  // 📌 Lấy danh sách hội thoại
+  // 📌 Lấy danh sách hội thoại từ backend
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -42,21 +54,55 @@ function RestaurantMessages() {
     fetchCustomers();
   }, [id]);
 
-  // 📌 Lấy messages khi chọn 1 user
+  // 📌 Lắng nghe messages realtime từ Firestore
   useEffect(() => {
-    if (!selectedUser) return;
-    const fetchMessages = async () => {
-      try {
-        const res = await api.get(
-          `/chat/restaurant/${id}/messages/${selectedUser.userId}`
-        );
-        setMessages(res.data);
-      } catch (err) {
-        console.error("Fetch messages error:", err);
+    if (!selectedUser || !owner) return;
+
+    setLoadingMessages(true);
+
+    const q = query(
+      collection(db, "messages"),
+      where("restaurantId", "==", parseInt(id)),
+      orderBy("timestamp", "asc")
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const msgs = snapshot.docs
+          .map((doc) => {
+            const data = doc.data() || {};
+            let ts = 0;
+            const raw = data.timestamp;
+            if (raw != null) {
+              if (typeof raw === "number") ts = raw;
+              else if (raw.toMillis) ts = raw.toMillis();
+              else if (raw.seconds) ts = raw.seconds * 1000;
+            }
+            return {
+              id: doc.id,
+              ...data,
+              timestamp: ts,
+            };
+          })
+          .filter(
+            (m) =>
+              [owner.id, selectedUser.userId].includes(m.senderId) &&
+              [owner.id, selectedUser.userId].includes(m.receiverId)
+          )
+          .sort((a, b) => a.timestamp - b.timestamp);
+
+        setMessages(msgs);
+        setLoadingMessages(false);
+      },
+      (err) => {
+        console.error("Snapshot error:", err);
+        setLoadingMessages(false);
       }
-    };
-    fetchMessages();
-  }, [id, selectedUser]);
+    );
+
+    return () => unsubscribe();
+  }, [id, selectedUser, owner]);
 
   // 📌 Auto scroll xuống cuối
   useEffect(() => {
@@ -66,27 +112,17 @@ function RestaurantMessages() {
   }, [messages]);
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser) return;
+    if (!newMessage.trim() || !selectedUser || !owner) return;
 
     try {
-      await api.post(`/chat/restaurant/send`, null, {
-        params: {
-          restaurantId: id,
-          receiverId: selectedUser.userId,
-          message: newMessage,
-        },
+      await addDoc(collection(db, "messages"), {
+        senderId: owner.id,
+        senderName: `${owner.firstName} ${owner.lastName}`,
+        receiverId: selectedUser.userId,
+        restaurantId: parseInt(id),
+        message: newMessage.trim(),
+        timestamp: serverTimestamp(),
       });
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          senderId: ownerId,
-          senderName: "Nhà hàng",
-          receiverId: selectedUser.userId,
-          message: newMessage,
-          timestamp: Date.now(),
-        },
-      ]);
 
       setNewMessage("");
     } catch (err) {
@@ -97,7 +133,7 @@ function RestaurantMessages() {
   return (
     <div style={{ display: "flex", height: "80vh", padding: 16, gap: 16 }}>
       {/* Sidebar */}
-      <Card style={{ width: "250px", overflowY: "auto" }}>
+      <Card style={{ width: 250, overflowY: "auto" }}>
         <Title level={5}>Khách hàng</Title>
         <List
           dataSource={customers}
@@ -115,11 +151,9 @@ function RestaurantMessages() {
               }}
             >
               <div>
-                <div style={{ fontWeight: 500 }}>
-                  {conversation.fullName}
-                </div>
+                <div style={{ fontWeight: 500 }}>{conversation.fullName}</div>
                 <div style={{ fontSize: 12, color: "#888" }}>
-                  {conversation.lastMessage.message}
+                  {conversation.lastMessage?.message}
                 </div>
               </div>
             </List.Item>
@@ -127,51 +161,64 @@ function RestaurantMessages() {
         />
       </Card>
 
-      {/* Khung chat */}
+      {/* Chat box */}
       <Card style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {selectedUser ? (
           <>
-            <Title level={5}>
-              Chat với {selectedUser.lastMessage.senderName}
-            </Title>
+            <Title level={5}>Chat với {selectedUser.fullName}</Title>
             <div
               style={{
                 flex: 1,
                 overflowY: "auto",
                 marginBottom: 16,
                 padding: "8px",
+                border: "1px solid #eee",
+                borderRadius: 8,
               }}
             >
-              {messages.map((msg, index) => {
-                const isRestaurant = msg.senderId === ownerId;
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      justifyContent: isRestaurant ? "flex-end" : "flex-start",
-                      marginBottom: 8,
-                    }}
-                  >
+              {loadingMessages ? (
+                <div style={{ textAlign: "center", marginTop: 40 }}>
+                  <Spin />
+                </div>
+              ) : messages.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#888" }}>
+                  Chưa có tin nhắn
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isRestaurant = msg.senderId === owner?.id;
+                  return (
                     <div
+                      key={msg.id}
                       style={{
-                        background: isRestaurant ? "#1677ff" : "#f0f0f0",
-                        color: isRestaurant ? "#fff" : "#000",
-                        padding: "8px 12px",
-                        borderRadius: 16,
-                        maxWidth: "60%",
+                        display: "flex",
+                        justifyContent: isRestaurant
+                          ? "flex-end"
+                          : "flex-start",
+                        marginBottom: 8,
                       }}
                     >
-                      {!isRestaurant && (
-                        <div style={{ fontSize: 12, marginBottom: 4 }}>
-                          {msg.senderName}
-                        </div>
-                      )}
-                      {msg.message}
+                      <div
+                        style={{
+                          background: isRestaurant ? "#1677ff" : "#f0f0f0",
+                          color: isRestaurant ? "#fff" : "#000",
+                          padding: "8px 12px",
+                          borderRadius: 16,
+                          maxWidth: "60%",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {!isRestaurant && (
+                          <div style={{ fontSize: 12, marginBottom: 4 }}>
+                            {msg.senderName}
+                          </div>
+                        )}
+                        {msg.message}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
               <div ref={messagesEndRef} />
             </div>
             <Input.Group compact style={{ display: "flex" }}>

@@ -1,19 +1,28 @@
+// src/components/ChatBox.jsx
 import React, { useState, useEffect } from "react";
-import { Input, Button, Card } from "antd";
+import { Input, Button, Card, Spin } from "antd";
 import { SendOutlined, MessageOutlined } from "@ant-design/icons";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  onSnapshot,
+  where,
+} from "firebase/firestore";
+import { db } from "../firebase";
 import api from "../api/axios";
-import "../App.css";
 
 export default function ChatBox({ restaurant }) {
   const [showChatBox, setShowChatBox] = useState(false);
-
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatFetching, setChatFetching] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // 📌 Lấy thông tin user
+  // lấy user hiện tại từ backend (token trong localStorage)
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -26,51 +35,96 @@ export default function ChatBox({ restaurant }) {
     fetchUser();
   }, []);
 
-  // 📌 Lấy tin nhắn khi mở chat
+  // realtime listener: chỉ lắng nghe khi bật chat, có restaurant & user
   useEffect(() => {
-    if (!showChatBox) return;
-    if (!restaurant?.id) return;
+    if (!showChatBox || !restaurant?.id || !currentUser?.id) return;
 
-    const fetchChat = async () => {
-      setChatFetching(true);
-      try {
-        const res = await api.get(`/chat/user/${restaurant.id}/messages`);
-        setChatMessages(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error("Không load được tin nhắn:", err);
-      } finally {
+    setChatFetching(true);
+
+    // Query: lấy message của nhà hàng này, và do sender là currentUser hoặc sender là owner (2 phía)
+    // NOTE: nếu Firestore yêu cầu index (error "requires an index"), mở console link để tạo composite index.
+    const q = query(
+      collection(db, "messages"),
+      where("restaurantId", "==", restaurant.id),
+      where("senderId", "in", [currentUser.id, restaurant.ownerId]),
+      orderBy("timestamp", "asc")
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const msgs = snapshot.docs
+          .map((doc) => {
+            const data = doc.data() || {};
+
+            // normalize timestamp -> number (milliseconds)
+            let ts = 0;
+            const raw = data.timestamp;
+            if (raw != null) {
+              // raw can be a Firestore Timestamp object or a number
+              if (typeof raw === "number") {
+                ts = raw;
+              } else if (raw.toMillis && typeof raw.toMillis === "function") {
+                // Firestore Timestamp
+                ts = raw.toMillis();
+              } else if (raw.seconds) {
+                // fallback shape
+                ts = raw.seconds * 1000 + (raw.nanoseconds || 0) / 1e6;
+              } else {
+                ts = Number(raw) || 0;
+              }
+            } else if (doc.createTime && doc.createTime.toMillis) {
+              // fallback to Firestore doc createTime if timestamp is null (local write may be null)
+              ts = doc.createTime.toMillis();
+            } else {
+              ts = Date.now(); // last fallback
+            }
+
+            return {
+              id: doc.id,
+              ...data,
+              timestamp: ts,
+            };
+          })
+          // ensure sorted by timestamp on client as a final source of truth
+          .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+        setChatMessages(msgs);
+        setChatFetching(false);
+      },
+      (err) => {
+        console.error("Snapshot error:", err);
         setChatFetching(false);
       }
-    };
+    );
 
-    fetchChat();
-  }, [showChatBox, restaurant?.id]);
+    return () => unsubscribe();
+  }, [showChatBox, restaurant?.id, currentUser?.id, restaurant?.ownerId]);
 
-  // 📌 Gửi tin nhắn
+  // gửi tin nhắn
   const handleSendMessage = async () => {
-    if (!chatInput.trim()) return;
-    if (!restaurant?.id) return;
+    if (!chatInput.trim() || !restaurant?.id || !currentUser?.id) return;
 
     setChatLoading(true);
+
     try {
-      // Gửi dạng query params thay vì FormData
-      await api.post("/chat/user/send", null, {
-        params: {
-          restaurantId: restaurant.id,
-          message: chatInput,
-        },
+      // Bạn có thể dùng serverTimestamp() nếu muốn đồng bộ timestamp phía server.
+      // Nếu muốn tránh hiện tượng "null timestamp" khi local write, có thể gửi timestamp client (Date.now()) thay cho serverTimestamp()
+      // 1) Dùng serverTimestamp (khuyến nghị) — UI sẽ được cập nhật khi snapshot về.
+      await addDoc(collection(db, "messages"), {
+        senderId: currentUser.id,
+        senderName: currentUser.firstName && currentUser.lastName
+          ? `${currentUser.firstName} ${currentUser.lastName}`
+          : currentUser.fullName || currentUser.username || "Bạn",
+        receiverId: restaurant.ownerId,
+        restaurantId: restaurant.id,
+        message: chatInput.trim(),
+        timestamp: serverTimestamp(), // hoặc: Date.now()
       });
 
-      // append tin nhắn mới vào UI
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          senderId: currentUser?.id,
-          senderName: currentUser?.fullName || "Bạn",
-          message: chatInput,
-          timestamp: Date.now(),
-        },
-      ]);
+      // nếu muốn hiển thị ngay mà không chờ snapshot, có thể push 1 optimistic message:
+      // setChatMessages(prev => [...prev, { id: 'local-'+Date.now(), senderId: currentUser.id, senderName: ..., receiverId: restaurant.ownerId, restaurantId: restaurant.id, message: chatInput.trim(), timestamp: Date.now(), _local: true }]);
+
       setChatInput("");
     } catch (err) {
       console.error("Không gửi được tin nhắn:", err);
@@ -97,27 +151,33 @@ export default function ChatBox({ restaurant }) {
               Đóng
             </Button>
           }
-          style={{ maxWidth: 400 }}
+          style={{ maxWidth: 420 }}
         >
           <div
-            className="chat-messages"
             style={{
-              border: "1px solid #ddd",
+              border: "1px solid #eee",
               borderRadius: 8,
               padding: 12,
-              maxHeight: 250,
+              height: 300,
               overflowY: "auto",
               marginBottom: 12,
+              background: "#fff",
             }}
           >
             {chatFetching ? (
-              <p>Đang tải tin nhắn...</p>
+              <div style={{ textAlign: "center", paddingTop: 40 }}>
+                <Spin />
+              </div>
+            ) : chatMessages.length === 0 ? (
+              <div style={{ color: "#888", textAlign: "center", paddingTop: 20 }}>
+                Chưa có tin nhắn
+              </div>
             ) : (
-              chatMessages.map((msg, i) => {
+              chatMessages.map((msg) => {
                 const isMe = msg.senderId === currentUser?.id;
                 return (
                   <div
-                    key={i}
+                    key={msg.id}
                     style={{
                       display: "flex",
                       justifyContent: isMe ? "flex-end" : "flex-start",
@@ -130,16 +190,20 @@ export default function ChatBox({ restaurant }) {
                         color: isMe ? "#fff" : "#000",
                         padding: "8px 12px",
                         borderRadius: 16,
-                        maxWidth: "70%",
+                        maxWidth: "78%",
                         wordBreak: "break-word",
+                        boxShadow: isMe ? "0 1px 3px rgba(22,119,255,0.2)" : "none",
                       }}
                     >
                       {!isMe && (
-                        <div style={{ fontSize: 12, marginBottom: 4 }}>
+                        <div style={{ fontSize: 12, marginBottom: 6, color: "#444" }}>
                           {msg.senderName}
                         </div>
                       )}
-                      {msg.message}
+                      <div>{msg.message}</div>
+                      <div style={{ fontSize: 11, color: "#777", marginTop: 6, textAlign: isMe ? "right" : "left" }}>
+                        {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ""}
+                      </div>
                     </div>
                   </div>
                 );
