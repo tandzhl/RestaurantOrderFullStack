@@ -113,8 +113,9 @@ public class FoodItemService {
     }
 
     public List<FoodItemResponse> getAllByMenu(Long menuId) {
-        return foodItemRepository.findAllByMenuId(menuId)
-                .stream().map(foodItem -> {
+        return foodItemRepository.findAllByMenuIdAndActiveTrue(menuId)
+                .stream()
+                .map(foodItem -> {
                     Double avgRating = foodReviewRepository.findAverageRatingByFoodItemId(foodItem.getId());
                     return foodItemMapper.toDto(foodItem, avgRating != null ? avgRating : 0.0);
                 })
@@ -127,12 +128,13 @@ public class FoodItemService {
 
         checkOwnerPermission(foodItem.getMenu());
 
-        foodItemRepository.delete(foodItem);
+        foodItem.setActive(false); // ✅ chỉ đổi trạng thái
+        foodItemRepository.save(foodItem);
     }
 
     public Page<FoodItemResponse> getFoodItemsByCategory(Long categoryId, int page) {
         PageRequest pageable = PageRequest.of(page, 12); // 12 món / trang
-        return foodItemRepository.findByCategoryId(categoryId, pageable)
+        return foodItemRepository.findByCategoryIdAndActiveTrue(categoryId, pageable)
                 .map(foodItem -> {
                     Double avgRating = foodReviewRepository.findAverageRatingByFoodItemId(foodItem.getId());
                     return foodItemMapper.toDto(foodItem, avgRating != null ? avgRating : 0.0);
@@ -151,7 +153,7 @@ public class FoodItemService {
 
         Page<FoodItem> foodPage;
         if (name != null && !name.isBlank()) {
-            foodPage = foodItemRepository.findByNameContainingIgnoreCase(name, pageable);
+            foodPage = foodItemRepository.findByNameContainingIgnoreCaseAndActiveTrue(name, pageable);
         } else {
             foodPage = foodItemRepository.findAll(pageable);
         }
@@ -163,7 +165,7 @@ public class FoodItemService {
     }
 
     public List<FoodItemResponse> getFoodItemsByRestaurant(Long restaurantId) {
-        List<FoodItem> foodItems = foodItemRepository.findByRestaurantId(restaurantId);
+        List<FoodItem> foodItems = foodItemRepository.findByRestaurantIdAndActiveTrue(restaurantId);
         return foodItemMapper.toResponseList(foodItems);
     }
 

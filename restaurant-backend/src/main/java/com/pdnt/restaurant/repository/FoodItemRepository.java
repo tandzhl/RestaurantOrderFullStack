@@ -9,11 +9,19 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FoodItemRepository extends JpaRepository<FoodItem, Long> {
-    List<FoodItem> findAllByMenuId(Long menuId);
-    Page<FoodItem> findByCategoryId(Long categoryId, Pageable pageable);
-    Page<FoodItem> findByNameContainingIgnoreCase(String name, Pageable pageable);
-    @Query("SELECT f FROM FoodItem f WHERE f.menu.restaurant.id = :restaurantId")
-    List<FoodItem> findByRestaurantId(@Param("restaurantId") Long restaurantId);
+    List<FoodItem> findAllByMenuIdAndActiveTrue(Long menuId);
+
+    Page<FoodItem> findByCategoryIdAndActiveTrue(Long categoryId, Pageable pageable);
+
+    Page<FoodItem> findByNameContainingIgnoreCaseAndActiveTrue(String name, Pageable pageable);
+
+    Page<FoodItem> findAllByActiveTrue(Pageable pageable);
+
+    @Query("SELECT f FROM FoodItem f WHERE f.menu.restaurant.id = :restaurantId AND f.active = true")
+    List<FoodItem> findByRestaurantIdAndActiveTrue(@Param("restaurantId") Long restaurantId);
+
+    Optional<FoodItem> findByIdAndActiveTrue(Long id); // ✅ dùng cho get chi tiết
 }
