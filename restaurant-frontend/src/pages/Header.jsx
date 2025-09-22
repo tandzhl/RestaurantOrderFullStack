@@ -25,7 +25,7 @@ function Header({ onSlugMapReady, onSearch }) {
   // --- Fetch user info + notifications ---
   useEffect(() => {
     const updateLoginState = () => {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       setIsLoggedIn(!!token);
       if (token) {
         fetchUserInfo();
@@ -44,7 +44,7 @@ function Header({ onSlugMapReady, onSearch }) {
 
   const fetchUserInfo = async () => {
     try {
-      const res = await api.get("http://localhost:8080/users/me");
+      const res = await api.get("users/me");
       setUserRole(res.data.role);
     } catch (err) {
       console.error("Lỗi lấy thông tin user:", err);
@@ -53,7 +53,7 @@ function Header({ onSlugMapReady, onSearch }) {
 
   const fetchNotifications = async () => {
     try {
-      const res = await api.get("http://localhost:8080/notifications/me");
+      const res = await api.get("notifications/me");
       setNotifications(res.data || []);
     } catch (err) {
       console.error("Lỗi lấy thông báo:", err);
@@ -96,11 +96,11 @@ function Header({ onSlugMapReady, onSearch }) {
   const handleNotificationClick = async (n) => {
     try {
       // 1. Đánh dấu đã đọc
-      await api.post(`http://localhost:8080/notifications/${n.id}/read`);
+      await api.post(`notifications/${n.id}/read`);
       fetchNotifications();
 
       if (n.type === "NEW_FOOD" && n.foodId) {
-        const res = await api.get(`http://localhost:8080/food-items/${n.foodId}`);
+        const res = await api.get(`food-items/${n.foodId}`);
         const food = res.data;
         const slug = `${toUniqueSlug(food.name)}-${food.id}`;
         navigate(`/food/${slug}`);
@@ -122,7 +122,7 @@ function Header({ onSlugMapReady, onSearch }) {
     } catch (e) {
       console.error("Logout error:", e);
     }
-    localStorage.removeItem("token");
+    sessionStorage.removeItem("token");
     setIsLoggedIn(false);
     setUserRole(null);
     message.success("Đăng xuất thành công!");
@@ -307,7 +307,7 @@ function Header({ onSlugMapReady, onSearch }) {
         </a>
 
         {/* Đăng ký cửa hàng chỉ cho USER */}
-        {isLoggedIn && userRole === "USER" && (
+        {isLoggedIn && (
           <Button
             type="dashed"
             icon={<PlusOutlined />}

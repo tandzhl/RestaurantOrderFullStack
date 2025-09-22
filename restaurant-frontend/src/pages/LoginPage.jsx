@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Form, Input, Button, Typography, Card, message } from "antd";
 import api from "../api/axios";
@@ -12,15 +11,24 @@ const LoginPage = () => {
   const handleSubmit = async (values) => {
     try {
       const res = await api.post("/auth/login", values);
-      localStorage.setItem("token", res.data.accessToken);
+      sessionStorage.setItem("token", res.data.accessToken);
       message.success("Đăng nhập thành công!");
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
+
       if (err.response) {
-        message.error(err.response.data?.message || "Sai tài khoản hoặc mật khẩu!");
+        const msg = err.response.data?.message;
+
+        if (msg === "USERNAME_NOT_FOUND") {
+          message.error("❌ Tên đăng nhập không tồn tại!");
+        } else if (msg === "INVALID_PASSWORD") {
+          message.error("❌ Mật khẩu không đúng!");
+        } else {
+          message.error(msg || "❌ Sai tài khoản hoặc mật khẩu!");
+        }
       } else {
-        message.error("Không thể kết nối đến server!");
+        message.error("❌ Không thể kết nối đến server!");
       }
     }
   };

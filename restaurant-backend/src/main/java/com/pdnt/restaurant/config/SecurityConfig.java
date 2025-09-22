@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/menus/**").hasRole("RESTAURANT_OWNER")
                         .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_OWNER")
                         .requestMatchers("/reports/**").hasRole("RESTAURANT_OWNER")
+                        .requestMatchers("/follow/restaurant/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/food-items/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/payment/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/food-reviews/**").permitAll()

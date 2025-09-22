@@ -9,7 +9,7 @@ const api = axios.create({
 
 // Tự động thêm JWT token vào header nếu có
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token"); // lưu token ở localStorage
+  const token = sessionStorage.getItem("token"); // lưu token ở localStorage
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

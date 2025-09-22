@@ -7,15 +7,21 @@ import com.pdnt.restaurant.dto.response.UserResponse;
 import com.pdnt.restaurant.entity.Token;
 import com.pdnt.restaurant.entity.User;
 import com.pdnt.restaurant.entity.enums.Role;
+import com.pdnt.restaurant.exceptions.ErrorCode;
+import com.pdnt.restaurant.exceptions.WebException;
 import com.pdnt.restaurant.mapper.UserMapper;
 import com.pdnt.restaurant.repository.TokenRepository;
 import com.pdnt.restaurant.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -53,19 +59,29 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
-
+        // 1️⃣ Kiểm tra username tồn tại trước
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow();
+                .orElseThrow(() -> new WebException(ErrorCode.USERNAME_NOT_FOUND));
 
+        // 2️⃣ Xác thực password
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException ex) {
+            throw new WebException(ErrorCode.PASSWORD_INCORRECT);
+        } catch (AuthenticationException ex) {
+            throw new WebException(ErrorCode.AUTHENTICATION_FAILED);
+        }
+
+        // 3️⃣ Revoke token cũ và cấp mới
         revokeAllUserTokens(user.getId());
         return issueTokens(user);
     }
+
 
     private AuthResponse issueTokens(User user) {
         String accessToken = jwtService.generateAccessToken(

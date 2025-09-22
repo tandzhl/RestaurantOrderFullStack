@@ -9,7 +9,7 @@ function PendingShops() {
   const fetchShops = async () => {
     try {
       setLoading(true);
-      const res = await api.get("http://localhost:8080/admin/restaurants/pending");
+      const res = await api.get("/admin/restaurants/pending");
       setShops(res.data || []);
     } catch (err) {
       console.error("Lỗi khi fetch pending shops:", err);
@@ -25,7 +25,7 @@ function PendingShops() {
 
   const handleApprove = async (id) => {
     try {
-      await api.put(`http://localhost:8080/admin/restaurants/${id}/approve`);
+      await api.put(`/admin/restaurants/${id}/approve`);
       message.success("Đã duyệt cửa hàng!");
       fetchShops();
     } catch (err) {
@@ -36,7 +36,7 @@ function PendingShops() {
 
   const handleReject = async (id) => {
     try {
-      await api.put(`http://localhost:8080/admin/restaurants/${id}/reject`);
+      await api.put(`/admin/restaurants/${id}/reject`);
       message.success("Đã từ chối cửa hàng!");
       fetchShops();
     } catch (err) {

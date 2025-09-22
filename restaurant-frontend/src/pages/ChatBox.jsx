@@ -35,18 +35,16 @@ export default function ChatBox({ restaurant }) {
     fetchUser();
   }, []);
 
-  // realtime listener: chỉ lắng nghe khi bật chat, có restaurant & user
+  // realtime listener: chỉ lắng nghe khi bật chat, có restaurant & user\
   useEffect(() => {
     if (!showChatBox || !restaurant?.id || !currentUser?.id) return;
 
     setChatFetching(true);
 
-    // Query: lấy message của nhà hàng này, và do sender là currentUser hoặc sender là owner (2 phía)
-    // NOTE: nếu Firestore yêu cầu index (error "requires an index"), mở console link để tạo composite index.
+    // Query: lấy tất cả message của nhà hàng trước, sẽ filter client sau
     const q = query(
       collection(db, "messages"),
       where("restaurantId", "==", restaurant.id),
-      where("senderId", "in", [currentUser.id, restaurant.ownerId]),
       orderBy("timestamp", "asc")
     );
 
@@ -61,23 +59,19 @@ export default function ChatBox({ restaurant }) {
             let ts = 0;
             const raw = data.timestamp;
             if (raw != null) {
-              // raw can be a Firestore Timestamp object or a number
               if (typeof raw === "number") {
                 ts = raw;
               } else if (raw.toMillis && typeof raw.toMillis === "function") {
-                // Firestore Timestamp
                 ts = raw.toMillis();
               } else if (raw.seconds) {
-                // fallback shape
                 ts = raw.seconds * 1000 + (raw.nanoseconds || 0) / 1e6;
               } else {
                 ts = Number(raw) || 0;
               }
             } else if (doc.createTime && doc.createTime.toMillis) {
-              // fallback to Firestore doc createTime if timestamp is null (local write may be null)
               ts = doc.createTime.toMillis();
             } else {
-              ts = Date.now(); // last fallback
+              ts = Date.now();
             }
 
             return {
@@ -86,7 +80,12 @@ export default function ChatBox({ restaurant }) {
               timestamp: ts,
             };
           })
-          // ensure sorted by timestamp on client as a final source of truth
+          // filter: chỉ lấy tin nhắn giữa currentUser và owner
+          .filter(
+            (msg) =>
+              (msg.senderId === currentUser.id && msg.receiverId === restaurant.ownerId) ||
+              (msg.senderId === restaurant.ownerId && msg.receiverId === currentUser.id)
+          )
           .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
         setChatMessages(msgs);
@@ -100,6 +99,7 @@ export default function ChatBox({ restaurant }) {
 
     return () => unsubscribe();
   }, [showChatBox, restaurant?.id, currentUser?.id, restaurant?.ownerId]);
+
 
   // gửi tin nhắn
   const handleSendMessage = async () => {

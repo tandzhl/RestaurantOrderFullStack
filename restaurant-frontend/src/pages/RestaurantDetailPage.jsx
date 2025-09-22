@@ -211,7 +211,7 @@ const RestaurantDetailPage = () => {
               style={{
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center", // 👈 căn giữa ngang
+                justifyContent: "left", // 👈 căn giữa ngang
                 gap: 8,
                 margin: "12px 0", // thêm khoảng cách cho đẹp
               }}

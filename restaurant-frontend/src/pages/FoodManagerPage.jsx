@@ -81,12 +81,15 @@ function FoodManagerPage() {
     formData.append("name", values.name);
     formData.append("price", values.price);
     formData.append("description", values.description || "");
-    formData.append("restaurantId", id);
     formData.append("menuId", values.menuId);
     formData.append("categoryId", values.categoryId);
-
+    formData.append("active", true);
     if (fileList.length > 0 && fileList[0].originFileObj) {
       formData.append("image", fileList[0].originFileObj);
+    }
+
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
     }
 
     try {

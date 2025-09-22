@@ -1,4 +1,3 @@
-// src/pages/RestaurantMessages.jsx
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { List, Input, Button, Typography, Card, Spin } from "antd";
@@ -25,6 +24,7 @@ function RestaurantMessages() {
   const [newMessage, setNewMessage] = useState("");
   const [owner, setOwner] = useState(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [restaurant, setRestaurant] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -41,7 +41,21 @@ function RestaurantMessages() {
     fetchMe();
   }, []);
 
-  // 📌 Lấy danh sách hội thoại từ backend
+
+  // Lấy thông tin nhà hàng
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      try {
+        const res = await api.get(`/restaurants/${id}`);
+        setRestaurant(res.data);
+      } catch (err) {
+        console.error("Fetch restaurant error:", err);
+      }
+    };
+    fetchRestaurant();
+  }, [id]);
+
+  // 📌 Lấy danh sách hội thoại từ backend mỗi 3 giây
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -51,8 +65,17 @@ function RestaurantMessages() {
         console.error("Fetch customers error:", err);
       }
     };
+
+    // Gọi ngay lần đầu
     fetchCustomers();
+
+    // Sau đó gọi mỗi 3 giây
+    const interval = setInterval(fetchCustomers, 3000);
+
+    // Cleanup khi unmount hoặc id thay đổi
+    return () => clearInterval(interval);
   }, [id]);
+
 
   // 📌 Lắng nghe messages realtime từ Firestore
   useEffect(() => {
@@ -117,7 +140,7 @@ function RestaurantMessages() {
     try {
       await addDoc(collection(db, "messages"), {
         senderId: owner.id,
-        senderName: `${owner.firstName} ${owner.lastName}`,
+        senderName: restaurant.name,
         receiverId: selectedUser.userId,
         restaurantId: parseInt(id),
         message: newMessage.trim(),

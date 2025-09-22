@@ -60,7 +60,7 @@ public class FoodItemService {
 
     public FoodItemResponse createFoodItem(FoodItemForm form) throws IOException {
         FoodItem foodItem = foodItemMapper.toEntity(form);
-
+        foodItem.setActive(true);
         // upload ảnh lên cloudinary
         if (form.getImage() != null && !form.getImage().isEmpty()) {
             String imageUrl = cloudinaryService.uploadFile(form.getImage());
@@ -155,7 +155,7 @@ public class FoodItemService {
         if (name != null && !name.isBlank()) {
             foodPage = foodItemRepository.findByNameContainingIgnoreCaseAndActiveTrue(name, pageable);
         } else {
-            foodPage = foodItemRepository.findAll(pageable);
+            foodPage = foodItemRepository.findAllByActiveTrue(pageable);
         }
 
         return foodPage.map(food -> {

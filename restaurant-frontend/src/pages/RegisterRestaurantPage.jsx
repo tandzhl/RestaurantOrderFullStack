@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Form, Input, Button, Card, Typography, Steps, TimePicker, Upload, message } from "antd";
-import { UploadOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../api/axios";
 import "../css/RegisterPage.css";
@@ -11,8 +11,6 @@ const { Step } = Steps;
 function RegisterRestaurantPage() {
   const [form] = Form.useForm();
   const [current, setCurrent] = useState(0);
-
-  // Preview state cho ảnh
   const [fileList, setFileList] = useState([]);
 
   const steps = [
@@ -89,38 +87,39 @@ function RegisterRestaurantPage() {
 
   const next = async () => {
     try {
+      // validate các field của bước hiện tại
       await form.validateFields();
       setCurrent(current + 1);
-    } catch {
-      return;
+    } catch (err) {
+      console.log("Validation error:", err);
     }
   };
 
-  const prev = () => {
-    setCurrent(current - 1);
-  };
+  const prev = () => setCurrent(current - 1);
 
-  const onFinish = async (values) => {
+  const registerRestaurant = async () => {
     try {
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("address", values.address);
+      // Lấy tất cả dữ liệu từ form
+      const values = form.getFieldsValue(true); // true để lấy cả nested giá trị
+      const payload = new FormData();
 
-      // ✅ lấy file từ fileList
+      payload.append("name", values.name);
+      payload.append("address", values.address);
+
       if (values.image && values.image.length > 0) {
-        formData.append("image", values.image[0].originFileObj);
+        payload.append("image", values.image[0].originFileObj);
       }
 
-      formData.append(
+      payload.append(
         "openingTime",
         dayjs(values.openingTime).format("HH:mm:ss")
       );
-      formData.append(
+      payload.append(
         "closingTime",
         dayjs(values.closingTime).format("HH:mm:ss")
       );
 
-      await api.post("/restaurants/register", formData, {
+      await api.post("/restaurants/register", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -130,47 +129,31 @@ function RegisterRestaurantPage() {
       setCurrent(0);
     } catch (error) {
       message.error("Đăng ký thất bại. Vui lòng thử lại!");
-      console.error("Register restaurant error:", error);
+      console.error(error);
     }
   };
 
   return (
     <div className="register-container">
-      <Card className="register-card">
-        <Title level={3} className="register-title">
-          Đăng ký cửa hàng
-        </Title>
+      <Card className="register-card" style={{ width: "70%", margin: "0 auto" }}>
+        <Title level={3} className="register-title">Đăng ký cửa hàng</Title>
         <Steps current={current} style={{ marginBottom: 24 }}>
-          {steps.map((item) => (
-            <Step key={item.title} title={item.title} />
-          ))}
+          {steps.map((item) => <Step key={item.title} title={item.title} />)}
         </Steps>
 
         <Form
           form={form}
           layout="vertical"
-          onFinish={onFinish}
+          onFinish={registerRestaurant}
           autoComplete="off"
           size="large"
         >
           {steps[current].content}
 
           <div style={{ marginTop: 24 }}>
-            {current > 0 && (
-              <Button style={{ marginRight: 8 }} onClick={prev}>
-                Quay lại
-              </Button>
-            )}
-            {current < steps.length - 1 && (
-              <Button type="primary" onClick={next}>
-                Tiếp tục
-              </Button>
-            )}
-            {current === steps.length - 1 && (
-              <Button type="primary" htmlType="submit">
-                Gửi yêu cầu
-              </Button>
-            )}
+            {current > 0 && <Button style={{ marginRight: 8 }} onClick={prev}>Quay lại</Button>}
+            {current < steps.length - 1 && <Button type="primary" onClick={next}>Tiếp tục</Button>}
+            {current === steps.length - 1 && <Button type="primary" htmlType="submit">Gửi yêu cầu</Button>}
           </div>
         </Form>
       </Card>

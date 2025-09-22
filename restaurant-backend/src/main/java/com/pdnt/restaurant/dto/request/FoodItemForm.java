@@ -11,5 +11,6 @@ public class FoodItemForm {
     private Long menuId;
     private Long categoryId;
     private MultipartFile image; // nhận file upload
+    private boolean active;
 }
 

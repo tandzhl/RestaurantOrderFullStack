@@ -8,7 +8,7 @@ import {
   Radio,
   Space,
 } from "antd";
-import axios from "axios";
+import api from "../api/axios"
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import "../css/CartPage.css";
@@ -30,11 +30,7 @@ const CartPage = () => {
 
     const fetchUser = async () => {
       try {
-        const res = await axios.get("http://localhost:8080/users/me", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
+        const res = await api.get("/users/me"); // ✅ sử dụng api
         setCustomerId(res.data.id);
       } catch (err) {
         console.error("❌ Không lấy được user:", err);
@@ -96,7 +92,7 @@ const CartPage = () => {
       const restaurantIds = [...new Set(cart.map((item) => item.restaurantId))];
 
       for (let id of restaurantIds) {
-        const res = await axios.get(`http://localhost:8080/restaurants/${id}`);
+        const res = await api.get(`/restaurants/${id}`);
         const r = res.data;
 
         if (!isRestaurantOpen(r.openingTime, r.closingTime)) {
@@ -119,27 +115,19 @@ const CartPage = () => {
         })),
       };
 
-      const res = await axios.post("http://localhost:8080/checkout", body, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await api.post("/checkout", body);
 
       setCurrentOrderGroup(res.data);
 
       if (paymentMethod === "VNPAY") {
-        const payRes = await axios.get(
-          `http://localhost:8080/payment/create-payment?orderId=${res.data.id}`
-        );
+        const payRes = await api.get(`/payment/create-payment?orderId=${res.data.id}`);
 
         if (payRes.data?.url) {
           setCart([]);
           localStorage.removeItem("cart");
 
           // 👉 Dùng navigate sang payment-result, không dùng window.location.href
-          navigate(
-            `/payment-result?status=SUCCESS&orderId=${res.data.id}&amount=${res.data.totalAmount}`
-          );
+          window.location.href = payRes.data.url;
         } else {
           message.error("Không tạo được link thanh toán VNPay");
           navigate(
@@ -163,14 +151,8 @@ const CartPage = () => {
     if (!currentOrderGroup) return;
 
     try {
-      const res = await axios.post(
-        `http://localhost:8080/order-groups/${currentOrderGroup.id}/pay`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
+      const res = await api.post(
+        `/order-groups/${currentOrderGroup.id}/pay`
       );
 
       message.success("🎉 Đặt hàng thành công!");
